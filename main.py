@@ -1,19 +1,9 @@
+from random import randint
+
 NB_REGISTER = 13  # Default 13 (from R0 to R12)
 
 code = """
-      MOV R2,#32
-LOOP:
-      OUT R2,7
-      ADD R2,R2,#1
-      CMP R2,#127
-      BLT LOOP
-      MOV R2,#10
-      OUT R2,7
-      MOV R12, #10
-      OUT R12,7
-      HALT
-      // Output all the ASCII print characters
-
+      
 """
 
 
@@ -71,7 +61,7 @@ class AqaInterpreter:
         self.register: dict = Initialize_Register()
         self.nb_line = self.file.count("\n")
         self.isHALT = False
-        self.CMP: dist = {}
+        self.CMP: list = []
 
     def Create_Lines(self) -> list:
         lines = self.file.split("\n")
@@ -106,9 +96,9 @@ class AqaInterpreter:
                 return self.register[arg]
             elif arg[0] == "#" and arg[1:].isdigit():
                 return int(arg[1:])
-        if len(arg) >= 3:
-            if arg[0:2] == "0X" and isHex(arg[2:]):
-                return int(arg, 16)
+        if len(arg) >= 4:
+            if arg[0:3] == "#0X" and isHex(arg[3:]):
+                return int(arg[1:], 16)
         raise SyntaxError(f"Incorrect Value Format : {arg}")
 
     def MOV_inst(self, arg: list) -> None:
@@ -149,13 +139,13 @@ class AqaInterpreter:
             raise SyntaxError(f"Wrong arguments for B instruction : {arg}")
 
     def BXX_inst(self, instruction: str, arg: list) -> None:
-        if not self.register["PC"] in self.CMP.keys():
-            raise SyntaxError("No comparator (CMP) used for B** instruction")
+        if not self.CMP:
+            raise SyntaxError("No previous comparator (CMP) used for B** instruction")
         if not len(arg) == 1:
             raise SyntaxError(f"Wrong arguments for B** instruction : {arg}")
         if not arg[0].upper() in self.labels.keys():
             raise SyntaxError(f"No label : {arg}")
-        first, second = self.CMP[self.register["PC"]]
+        first, second = self.CMP
         first = self.register[first]
         destination = arg[0].upper()
         match instruction:
@@ -180,16 +170,24 @@ class AqaInterpreter:
         if len(arg) == 2:
             first = Sanitize_Register_Input(arg[0])
             second = self.Get_Value(arg[1])
-            next_line = self.register["PC"] + 1
-            self.CMP[next_line] = (first, second)
+            self.CMP = [first, second]
 
     def INP_inst(self, arg: list) -> None:
-        if len(arg) > 2:
+        type = arg[1].strip()
+        if len(arg) > 2 or not type.isdigit():
             raise SyntaxError(f"Wrong arguments for INP instruction : {arg}")
+        type = int(type)
         destination = Sanitize_Register_Input(arg[0])
+        value: int = 0
         if len(arg) == 2:
+            match type:
+                case 8:
+                    self.register[destination] = randint(0, 2**31)
+                    return
+                case 2 | _:
+                    self.register[destination] = self.Get_Value(input("INPUT > "), True)
+                    return
             pass  # TODO : Enhanced input
-        self.register[destination] = self.Get_Value(input("INPUT > "), True)
 
     def OUT_inst(self, arg: list) -> None:
         if len(arg) > 2:
@@ -203,7 +201,41 @@ class AqaInterpreter:
                     print(hex(self.register[destination]))
                 case 7:
                     print(chr(self.register[destination]), end='')
+                case 8:
+                    print("\0")
+        else:
+            print(self.register[destination])
             pass  # TODO : Enhanced Output
+
+    def BIN_inst(self, instruction: str, arg: list) -> None:
+        if len(arg) != 3:
+            raise SyntaxError(f"Wrong arguments for Binary (AND, ORR, EOR, LSL, LSR) instructions : {arg}")
+        destination = Sanitize_Register_Input(arg[0])
+        first = Sanitize_Register_Input(arg[1])
+        second = self.Get_Value(arg[2])
+        match instruction:
+            case "AND":
+                self.register[destination] = self.register[first] & second
+                return
+            case "ORR":
+                self.register[destination] = self.register[first] | second
+                return
+            case "EOR":
+                self.register[destination] = self.register[first] ^ second
+                return
+            case "LSL":
+                self.register[destination] = self.register[first] << second
+                return
+            case "LSR":
+                self.register[destination] = self.register[first] >> second
+                return
+
+    def MVN_inst(self, arg: list) -> None:
+        if len(arg) != 2:
+            raise SyntaxError(f"Wrong arguments for MVN instruction : {arg}")
+        destination = Sanitize_Register_Input(arg[0])
+        value = self.Get_Value(arg[1])
+        self.register[destination] = ~value
 
     def Handle_Line(self) -> None:
         line = self.lines[self.register["PC"]]  # Get the line executed
@@ -219,6 +251,9 @@ class AqaInterpreter:
             case "BEQ" | "BNE" | "BGT" | "BLT":
                 self.BXX_inst(instruction, arguments)
                 return
+            case "AND" | "ORR" | "EOR" | "LSL" | "LSR":
+                self.BIN_inst(instruction, arguments)
+                return
             case "CMP":
                 self.CMP_inst(arguments)
                 return
@@ -230,6 +265,9 @@ class AqaInterpreter:
                 return
             case "MOV":
                 self.MOV_inst(arguments)
+                return
+            case "MVN":
+                self.MVN_inst(arguments)
                 return
             case "OUT":
                 self.OUT_inst(arguments)
@@ -249,7 +287,6 @@ class AqaInterpreter:
 
 
 o = AqaInterpreter(code)
-print(o.lines)
 print(o.labels)
 o.Run()
 print(o.register)
