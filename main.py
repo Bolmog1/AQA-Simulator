@@ -3,7 +3,8 @@ from random import randint
 NB_REGISTER = 13  # Default 13 (from R0 to R12)
 
 code = """
-      
+main:
+    mov r0, #0x56
 """
 
 
