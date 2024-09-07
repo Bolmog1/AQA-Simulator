@@ -14,10 +14,10 @@ class AQALexer(RegexLexer):
             (r'/.*$', Comment.Single),
 
             # Keywords (Instructions)
-            (r'\b(?i)(mov|add|sub|mul|div|and|or|not|cmp|jmp|je|jne|jg|jl|jge|jle|call|ret|push|pop|hlt)\b', Keyword),
+            (r'\b(?i)(mov|add|sub|and|orr|not|cmp|b|beq|bnq|blt|bgt|halt|out|inp)\b', Keyword),
 
             # Registers
-            (r'\b(?i)(r[0-9]|sp|lr|pc)\b', Name.Variable),
+            (r'\b(?i)(r[0-9]|r[0-9][0-2])\b', Name.Variable),
 
             # Labels
             (r'^[A-Za-z_][A-Za-z0-9_]*:', Name.Label),

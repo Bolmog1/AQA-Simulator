@@ -1,8 +1,7 @@
 import customtkinter as ctk
 
-import pygments.lexers
 from chlorophyll import CodeView
-import AqaLexer
+from theme import AqaLexer
 
 
 class CodeEditor(ctk.CTkFrame):

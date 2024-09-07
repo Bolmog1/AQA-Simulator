@@ -1,11 +1,8 @@
 from random import randint
+from GUI import App
+from time import sleep
 
 NB_REGISTER = 13  # Default 13 (from R0 to R12)
-
-code = """
-main:
-    mov r0, #0x56
-"""
 
 
 def isIdent(line: str) -> bool:
@@ -55,7 +52,18 @@ def Sanitize_Register_Input(arg: str) -> str:
 
 
 class AqaInterpreter:
-    def __init__(self, file: str):
+    def __init__(self, GUI: App):
+        self.file = ""
+        self.GUI = GUI
+        self.lines: list = []
+        self.labels: dict = {}
+        self.register: dict = Initialize_Register()
+        self.nb_line = 0
+        self.isHALT = False
+        self.CMP: list = []
+        self.memory: list = [0 for i in range(200)]
+
+    def load(self, file: str):
         self.file = file
         self.lines: list = self.Create_Lines()
         self.labels: dict = self.Analize_Label()
@@ -63,6 +71,17 @@ class AqaInterpreter:
         self.nb_line = self.file.count("\n")
         self.isHALT = False
         self.CMP: list = []
+        self.memory: list = [0 for i in range(200)]
+
+    def unload(self):
+        self.file = ""
+        self.lines: list = []
+        self.labels: dict = {}
+        self.register: dict = Initialize_Register()
+        self.nb_line = 0
+        self.isHALT = False
+        self.CMP: list = []
+        self.memory: list = [0 for i in range(200)]
 
     def Create_Lines(self) -> list:
         lines = self.file.split("\n")
@@ -186,7 +205,12 @@ class AqaInterpreter:
                     self.register[destination] = randint(0, 2**31)
                     return
                 case 2 | _:
-                    self.register[destination] = self.Get_Value(input("INPUT > "), True)
+                    self.GUI.WaitForEntry()
+                    self.GUI.print_debug("Waiting for Entry")
+                    while not self.GUI.entry:
+                        sleep(0.1)
+                    self.register[destination] = self.Get_Value(self.GUI.entry, True)
+                    self.GUI.entry = None
                     return
             pass  # TODO : Enhanced input
 
@@ -197,15 +221,15 @@ class AqaInterpreter:
         if len(arg) == 2:
             match int(arg[1]):
                 case 4 | 5:
-                    print(self.register[destination])
+                    self.GUI.output(self.register[destination])
                 case 6:
-                    print(hex(self.register[destination]))
+                    self.GUI.output(hex(self.register[destination]))
                 case 7:
-                    print(chr(self.register[destination]), end='')
+                    self.GUI.output(chr(self.register[destination]))
                 case 8:
-                    print("\0")
+                    self.GUI.output("\n")
         else:
-            print(self.register[destination])
+            self.GUI.output(self.register[destination])
             pass  # TODO : Enhanced Output
 
     def BIN_inst(self, instruction: str, arg: list) -> None:
@@ -260,6 +284,7 @@ class AqaInterpreter:
                 return
             case "HALT":
                 self.HALT_inst()
+                self.GUI.print_debug("script halted")
                 return
             case "INP":
                 self.INP_inst(arguments)
@@ -278,16 +303,24 @@ class AqaInterpreter:
                 return
             case _:
                 print("Unknown Instruction: ", instruction)
+                self.GUI.print_debug(f"Unknown Instruction: {instruction}")
                 return
 
-    def Run(self):
-        while self.register["PC"] <= self.nb_line and not self.isHALT:
+    def Step(self):
+        if self.register["PC"] <= self.nb_line and not self.isHALT:
             self.Handle_Line()
             self.register["PC"] += 1
-        print("Done!")
+            self.GUI.refresh_register()
+            self.GUI.refresh_memory()
 
-
-o = AqaInterpreter(code)
-print(o.labels)
-o.Run()
-print(o.register)
+    def Run(self):
+        sleep_time = self.GUI.get_sleep_time() * 0.1
+        self.GUI.Running(True)
+        self.GUI.checkThreadAlive()
+        while self.register["PC"] <= self.nb_line and not self.isHALT and self.GUI.isRunning:
+            self.Handle_Line()
+            self.register["PC"] += 1
+            self.GUI.refresh_register()
+            self.GUI.refresh_memory()
+            sleep(sleep_time)
+        self.GUI.Running(False)
