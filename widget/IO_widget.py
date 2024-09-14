@@ -36,3 +36,11 @@ class IO(ctk.CTkFrame):
         self.output.configure(state='normal')
         self.output.insert("end", msg)
         self.output.configure(state='disabled')
+
+    def reset_IO(self):
+        self.output.configure(state='normal')
+        self.output.delete(0.0, "end")
+        self.output.configure(state='disabled')
+        self.input.configure(state='normal')
+        self.input.delete(0, "end")
+        self.input.configure(state='disabled')

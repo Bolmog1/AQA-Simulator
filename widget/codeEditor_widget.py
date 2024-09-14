@@ -20,8 +20,9 @@ class CodeEditor(ctk.CTkFrame):
         self.codeview = CodeView(self, lexer=AqaLexer.AQALexer, color_scheme=scheme, font=("JetBrains Mono", 18), tab_width=2)
         self.codeview.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
 
-    def load_script(self):
-        ...
+    def load_script(self, script: str):
+        self.codeview.delete("0.0", "end")
+        self.codeview.insert("0.0", script)
 
     def save_script(self):
         ...

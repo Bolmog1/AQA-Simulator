@@ -23,6 +23,8 @@ class ButtonsMenu(ctk.CTkFrame):
 
         self.vcmd = (self.register(self.callback))
 
+        self.time_value = ctk.StringVar()
+
         self.run = ctk.CTkButton(self, text='Run', command=lambda: self.after(0, self.master.runButton()))
         self.run.grid(row=0, column=0, columnspan=2, sticky='ew', padx=5)
 
@@ -35,7 +37,7 @@ class ButtonsMenu(ctk.CTkFrame):
         self.step = ctk.CTkButton(self, text='Step', command=lambda: self.master.step_script())
         self.step.grid(row=2, column=0, sticky='ew', padx=5)
 
-        self.time = ctk.CTkEntry(self, placeholder_text="time by instr", validate='all', validatecommand=(self.vcmd, '%P'))
+        self.time = ctk.CTkEntry(self, placeholder_text="time by instr", validate='all', validatecommand=(self.vcmd, '%P'), textvariable=self.time_value)
         self.time.grid(row=2, column=1, sticky='ew', padx=5)
 
         self.info = ctk.CTkButton(self, text='Documentation')
@@ -72,4 +74,7 @@ class ButtonsMenu(ctk.CTkFrame):
         self.run.configure(text='Run' if not running else 'Stop')
 
     def get_sleep_time(self):
-        return int(self.time.get()) if self.time.get() else 0
+        return int(self.time_value.get()) if self.time_value.get() else 0
+
+    def set_sleep_time(self, time: float):
+        self.time_value.set(str(time))

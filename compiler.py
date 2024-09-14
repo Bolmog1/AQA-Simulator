@@ -47,13 +47,29 @@ def get_binary_instruction(instruction: str, arg: list | None, script_label: dic
             arg[i] = arg[i].strip()
     if instruction in ['B', 'BEQ', 'BGT', 'BLT', 'BNE']:
         arg[0] = '#' + str(script_label[arg[0]])
+    if instruction == "OUT":
+        if len(arg) == 1:
+            arg.append("#4")
+        elif not arg[1].startswith("#"):
+            arg[1] = "#" + str(arg[1])
+    if instruction == "INP":
+        if len(arg) == 1:
+            arg.append("#2")
+        elif not arg[1].startswith("#"):
+            arg[1] = "#" + str(arg[1])
+    if instruction == "SYS":
+        if not arg:
+            raise SyntaxError('No arg for SYS')
+        if not arg[0].startswith("#"):
+            arg[0] = "#" + str(arg[0])
+
     if instruction.isdigit():
         return int(instruction)
     binary_instruction: int = instructions_bits[instruction]
     mask: int = 0
     binary_body: int = 0
     match instruction:
-        case 'AND' | 'ADD' | 'SUB' | 'ORR' | 'EOR' | 'LSL' | 'LSR' | 'MOV':  # MASK 2 OR 3
+        case 'AND' | 'ADD' | 'SUB' | 'ORR' | 'EOR' | 'LSL' | 'LSR':  # MASK 2 OR 3
             if len(arg) != 3:  # Check number of arguments
                 raise SyntaxError(f"Instruction '{instruction}' takes 3 arguments but {len(arg)} were given: {arg}")
             mask = 3 if isRegister(arg[2]) else 2
@@ -63,7 +79,7 @@ def get_binary_instruction(instruction: str, arg: list | None, script_label: dic
                 binary_body = getRegister(arg[0]) << 20 | getRegister(arg[1]) << 16 | getRegister(arg[2]) << 12
             else:
                 binary_body = (getRegister(arg[0]) << 20) | (getRegister(arg[1]) << 16) | getNumber(arg[2])
-        case 'B' | 'BEQ' | 'BGT' | 'BLT' | 'BNE' | 'HALT' | 'SYS':
+        case 'B' | 'BEQ' | 'BGT' | 'BLT' | 'BNE' | 'HALT' | 'SYS':  # MASK 4
             mask = 4
             if arg and len(arg) != 1:  # Check number of arguments
                 raise SyntaxError(f"Instruction '{instruction}' takes 1 arguments but {len(arg)} were given: {arg}")
@@ -71,7 +87,7 @@ def get_binary_instruction(instruction: str, arg: list | None, script_label: dic
                 if not isNumber(arg[0]):
                     raise SyntaxError(f"Wrong argument for {instruction}: {arg[0]}")
                 binary_body = getNumber(arg[0])
-        case "CMP" | "INP" | "OUT" | "STR" | "LDR" | "MVN":
+        case "CMP" | "INP" | "OUT" | "STR" | "LDR" | "MVN" | 'MOV':  # MASK 1 OR 2
             if len(arg) != 2:
                 raise SyntaxError(f"Instruction '{instruction}' takes 2 arguments but {len(arg)} were given: {arg}")
             if not (isRegister(arg[0]) and isRegister(arg[1]) or isNumber(arg[1])):
@@ -112,7 +128,7 @@ def handle_file(script_line: list[str]):
                     script_clean.append("§" + second.strip())
                     continue
         script_clean.append(line.strip())
-    script_label = []
+    script_label = []  # Handling labels
     for n, line in enumerate(script_clean):
         if "§" == line:
             labels[label.pop(0).upper()] = len(script_label)
@@ -156,8 +172,10 @@ loop:add R0, R12, #23
     add R5, R12, R9
     sub R0, R0, #23
 L200: 45
-    halt
+    HALT
     LSR R2, R10, #123
+    OUT R0
+    SYS 2
 fdp:B main
 L100: 92
 """

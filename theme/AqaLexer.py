@@ -14,7 +14,7 @@ class AQALexer(RegexLexer):
             (r'/.*$', Comment.Single),
 
             # Keywords (Instructions)
-            (r'\b(?i)(mov|add|sub|and|orr|not|cmp|b|beq|bnq|blt|bgt|halt|out|inp)\b', Keyword),
+            (r'\b(?i)(mov|add|sub|and|orr|not|cmp|b|beq|bne|blt|bgt|halt|out|inp|sys)\b', Keyword),
 
             # Registers
             (r'\b(?i)(r[0-9]|r[0-9][0-2])\b', Name.Variable),
