@@ -1,6 +1,6 @@
 # AQA Python Simulator
 
-`AQA Python Simulator` is a Python Simulator with a Graphic User Interface for Assembly AQA.
+`AQA Python Simulator` is a Python Simulator with a Graphic Interface for Assembly AQA.
 
 This project is based on [Peter L Higginson's AQA Simulator](https://www.peterhigginson.co.uk/AQA/). However, the code is fully custom.
 
@@ -15,7 +15,7 @@ git clone https://github.com/Bolmog1/AQA-Simulator/
 
 Download dependencies with
 ```shell
-pip install -r requierement.txt
+pip install -r requirements.txt
 ```
 
 And then run with
